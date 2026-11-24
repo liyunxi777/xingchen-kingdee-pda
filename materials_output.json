@@ -1,0 +1,221 @@
+{
+  "extract_time": "2026-11-18T15:18:31.236173",
+  "total_count": 5,
+  "config": {
+    "client_id": "368805",
+    "app_key": "FFtWZry8",
+    "source": "http://127.0.0.1:8765"
+  },
+  "materials": [
+    {
+      "material_id": "2005881943043876864",
+      "material_number": "CYJXG0014",
+      "material_name": "包引-14",
+      "material_full_name": "包引-14",
+      "specification": "规格A",
+      "model": "型号X1",
+      "barcode": "6901234567890",
+      "material_group_id": "2358007566501426176",
+      "material_group_name": "原材料",
+      "material_group_number": "YL",
+      "measure_unit_id": "6",
+      "measure_unit_name": "个",
+      "is_multi_unit": false,
+      "primary_unit": {
+        "unit_id": "6",
+        "unit_name": "个",
+        "unit_type": "1",
+        "unit_convert": "1"
+      },
+      "alt_units": [],
+      "units_raw": [
+        {
+          "unit_id": "6",
+          "unit_name": "个",
+          "unit_type": "1",
+          "unit_convert": "1"
+        }
+      ],
+      "aux_prop_id": "",
+      "aux_prop_name": "",
+      "labels": [],
+      "custom_field": {},
+      "enable": true,
+      "remark": "测试物料备注",
+      "create_time": "2024-01-15 10:30:00",
+      "modify_time": "2024-06-20 14:22:00"
+    },
+    {
+      "material_id": "2021039527732250624",
+      "material_number": "BC-QT0001",
+      "material_name": "包材-其他1",
+      "material_full_name": "包材-其他1",
+      "specification": "",
+      "model": "",
+      "barcode": "6901234567891",
+      "material_group_id": "2358007566501426176",
+      "material_group_name": "包材",
+      "material_group_number": "BC",
+      "measure_unit_id": "1",
+      "measure_unit_name": "个",
+      "is_multi_unit": false,
+      "primary_unit": {
+        "unit_id": "1",
+        "unit_name": "个",
+        "unit_type": "1",
+        "unit_convert": "1"
+      },
+      "alt_units": [],
+      "units_raw": [
+        {
+          "unit_id": "1",
+          "unit_name": "个",
+          "unit_type": "1",
+          "unit_convert": "1"
+        }
+      ],
+      "aux_prop_id": "",
+      "aux_prop_name": "",
+      "labels": [],
+      "custom_field": {},
+      "enable": true,
+      "remark": "",
+      "create_time": "2024-08-01 09:00:00",
+      "modify_time": "2024-08-01 09:00:00"
+    },
+    {
+      "material_id": "2440145414180164608",
+      "material_number": "YL-RM0001",
+      "material_name": "原料-0001",
+      "material_full_name": "原料-0001",
+      "specification": "100mm×200mm",
+      "model": "RM-V2",
+      "barcode": "",
+      "material_group_id": "2358007566501426176",
+      "material_group_name": "原材料",
+      "material_group_number": "YL",
+      "measure_unit_id": "4",
+      "measure_unit_name": "kg",
+      "is_multi_unit": true,
+      "primary_unit": {
+        "unit_id": "4",
+        "unit_name": "kg",
+        "unit_type": "1",
+        "unit_convert": "1"
+      },
+      "alt_units": [
+        {
+          "unit_id": "5",
+          "unit_name": "g",
+          "unit_type": "2",
+          "unit_convert": "1000"
+        }
+      ],
+      "units_raw": [
+        {
+          "unit_id": "4",
+          "unit_name": "kg",
+          "unit_type": "1",
+          "unit_convert": "1"
+        },
+        {
+          "unit_id": "5",
+          "unit_name": "g",
+          "unit_type": "2",
+          "unit_convert": "1000"
+        }
+      ],
+      "aux_prop_id": "1",
+      "aux_prop_name": "颜色:红色",
+      "labels": [
+        {
+          "label_name": "热销",
+          "label_id": "1"
+        }
+      ],
+      "custom_field": {
+        "custom_field__1__abc": "值1"
+      },
+      "enable": true,
+      "remark": "进口原料",
+      "create_time": "2025-03-10 08:15:00",
+      "modify_time": "2025-11-01 16:30:00"
+    },
+    {
+      "material_id": "2453837087967821824",
+      "material_number": "CP-ZJ0001",
+      "material_name": "成品-主件001",
+      "material_full_name": "成品-主件001",
+      "specification": "标准",
+      "model": "ZJ-001",
+      "barcode": "6901234567892",
+      "material_group_id": "2358007566501426177",
+      "material_group_name": "产成品",
+      "material_group_number": "CP",
+      "measure_unit_id": "6",
+      "measure_unit_name": "个",
+      "is_multi_unit": false,
+      "primary_unit": {
+        "unit_id": "6",
+        "unit_name": "个",
+        "unit_type": "1",
+        "unit_convert": "1"
+      },
+      "alt_units": [],
+      "units_raw": [
+        {
+          "unit_id": "6",
+          "unit_name": "个",
+          "unit_type": "1",
+          "unit_convert": "1"
+        }
+      ],
+      "aux_prop_id": "",
+      "aux_prop_name": "",
+      "labels": [],
+      "custom_field": {},
+      "enable": true,
+      "remark": "",
+      "create_time": "2025-06-15 11:00:00",
+      "modify_time": "2025-10-20 09:45:00"
+    },
+    {
+      "material_id": "2509440949940245504",
+      "material_number": "BC-QT0002",
+      "material_name": "包材-其他2",
+      "material_full_name": "包材-其他2",
+      "specification": "500ml",
+      "model": "",
+      "barcode": "",
+      "material_group_id": "2358007566501426176",
+      "material_group_name": "包材",
+      "material_group_number": "BC",
+      "measure_unit_id": "3",
+      "measure_unit_name": "瓶",
+      "is_multi_unit": false,
+      "primary_unit": {
+        "unit_id": "3",
+        "unit_name": "瓶",
+        "unit_type": "1",
+        "unit_convert": "1"
+      },
+      "alt_units": [],
+      "units_raw": [
+        {
+          "unit_id": "3",
+          "unit_name": "瓶",
+          "unit_type": "1",
+          "unit_convert": "1"
+        }
+      ],
+      "aux_prop_id": "",
+      "aux_prop_name": "",
+      "labels": [],
+      "custom_field": {},
+      "enable": true,
+      "remark": "环保材质",
+      "create_time": "2025-08-01 10:00:00",
+      "modify_time": "2025-08-01 10:00:00"
+    }
+  ]
+}

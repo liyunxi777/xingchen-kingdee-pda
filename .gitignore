@@ -1,0 +1,26 @@
+# Visual Studio / MSBuild
+bin/
+obj/
+.vs/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.cache
+*.pdb
+*.exe
+*.dll
+*.log
+*.tlog
+
+# NuGet
+packages/
+*.nupkg
+
+# WorkBuddy 本地记忆与临时目录
+.workbuddy/
+tmp_restore/
+
+# 其他
+Thumbs.db
+.DS_Store
