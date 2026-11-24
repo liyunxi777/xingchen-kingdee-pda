@@ -4,13 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3008A277-FAAF-4E8F-9D96-416DB5EC7CB9}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <StartupObject>WindowsApplication3.My.MyApplication</StartupObject>
+    <!-- 旧版 VB 界面已停用：换独立 GUID + Library 输出 + 独立程序集名，
+         保证它既不能被启动，也不会覆盖 C# 版生成的 WindowsApplication3.exe -->
+    <ProjectGuid>{AA29788C-EF52-472B-8DEB-3534C821A187}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <RootNamespace>WindowsApplication3</RootNamespace>
-    <AssemblyName>WindowsApplication3</AssemblyName>
+    <AssemblyName>WindowsApplication3LegacyVB</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <MyType>WindowsForms</MyType>
+    <MyType>Windows</MyType>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -21,8 +22,8 @@
     <DebugType>full</DebugType>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DocumentationFile>WindowsApplication3.xml</DocumentationFile>
+    <OutputPath>bin\LegacyVB\Debug\</OutputPath>
+    <DocumentationFile>WindowsApplication3LegacyVB.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -31,8 +32,8 @@
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>WindowsApplication3.xml</DocumentationFile>
+    <OutputPath>bin\LegacyVB\Release\</OutputPath>
+    <DocumentationFile>WindowsApplication3LegacyVB.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <PropertyGroup>

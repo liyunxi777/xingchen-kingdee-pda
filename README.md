@@ -31,8 +31,10 @@ WindowsApplication3.sln
     └── KdXingCheng.vbproj       # 旧版 VB 项目（FrmTest.vb），仅保留兼容
 ```
 
-> 注意：目录下同时存在 `FrmTest.cs` 与 `FrmTest.vb`。**请编译 `KdXingCheng.csproj`**；
-> `KdXingCheng.vbproj` 是旧代码，不包含 Token 缓存、Tab 自动刷新、请求日志与数据库入库功能。
+> 注意：目录下同时存在 `FrmTest.cs` 与 `FrmTest.vb`。**默认启动项目是 C# 的 `KdXingCheng.csproj`**，
+> 打开 `WindowsApplication3.sln` 后直接 F5 运行即可看到新版界面。
+> `KdXingCheng.vbproj` 是已停用的旧代码，已改为类库（不可启动）、换用独立 GUID 与程序集名、
+> 输出到 `bin\LegacyVB\`，不会覆盖 C# 版生成的 `WindowsApplication3.exe`。
 
 ## 环境要求
 
