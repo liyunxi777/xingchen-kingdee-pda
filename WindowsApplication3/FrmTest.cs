@@ -720,10 +720,9 @@ namespace WindowsApplication3
         }
 
         /// <summary>
-        /// 把 DataTable 手动填充到指定 DataGridView（主表格与 TabControl 自动刷新表格共用）。
-        /// 关键防御：DataGridView 一旦设置了 DataSource（绑定模式）， Rows.Add() 会抛
-        /// "不能将行添加到已绑定数据的 DataGridView"异常，导致表格空白。
-        /// 统一清空绑定，回到"非绑定/手动填充"模式，保证表格持续显示。
+        /// 把 DataTable 填充到指定 DataGridView（主表格与 TabControl 自动刷新表格共用）。
+        /// 采用 DataSource 一次性绑定 + SuspendLayout，替代逐行 Rows.Add，
+        /// 列宽只按表头估算，避免 AutoResizeColumns 对上百行逐格测量造成的严重卡顿。
         /// </summary>
         private void FillGridView(DataGridView grid, DataTable dt)
         {
@@ -735,26 +734,29 @@ namespace WindowsApplication3
                 grid.BeginInvoke(new Action(() => FillGridView(grid, dt)));
                 return;
             }
-            if (grid.DataSource != null) grid.DataSource = null;
-            grid.Columns.Clear();
-            grid.Rows.Clear();
 
-            foreach (DataColumn dc in dt.Columns)
+            // 性能：暂停布局与重绘，避免逐行 Add 触发上百次重排；用 DataSource 一次性绑定替代手动填格。
+            grid.SuspendLayout();
+            try
             {
-                string header = dc.ColumnName;
-                grid.Columns.Add(header, header);
-            }
-
-            foreach (DataRow dr in dt.Rows)
-            {
-                int rowIdx = grid.Rows.Add();
-                DataGridViewRow dgvRow = grid.Rows[rowIdx];
-                for (int i = 0; i < dt.Columns.Count; i++)
+                grid.DataSource = null;
+                grid.AutoGenerateColumns = true;
+                grid.DataSource = dt;
+                // 只按"表头文字"估算列宽（O(列数)），不再逐格测量（原来是 O(行数×列数)，100 行时明显卡顿）
+                foreach (DataGridViewColumn col in grid.Columns)
                 {
-                    dgvRow.Cells[i].Value = dr[i];
+                    int w = (col.HeaderText ?? "").Length * 12 + 24;
+                    col.Width = Math.Max(72, Math.Min(w, 180));
+                }
+                if (grid.Rows.Count > 0 && grid.Columns.Count > 0)
+                {
+                    try { grid.CurrentCell = grid.Rows[0].Cells[0]; } catch { }
                 }
             }
-            grid.AutoResizeColumns();
+            finally
+            {
+                grid.ResumeLayout();
+            }
         }
 
         /// <summary>
@@ -762,7 +764,14 @@ namespace WindowsApplication3
         /// </summary>
         private void HandleApiResponse(string strJson, string endpointLabel)
         {
-            TextBox1.Text = strJson;
+            // 性能：大 JSON（几十万字符）整段塞进 TextBox 会明显卡 UI；界面只显示前若干字符，
+            // 完整原文仍保存在 _lastJson 供入库使用，不影响功能。
+            const int MAX_TEXTBOX_CHARS = 20000;
+            if (!string.IsNullOrEmpty(strJson) && strJson.Length > MAX_TEXTBOX_CHARS)
+                TextBox1.Text = strJson.Substring(0, MAX_TEXTBOX_CHARS)
+                    + "\n…（共 " + strJson.Length + " 字符，此处仅显示前 " + MAX_TEXTBOX_CHARS + "；完整数据不受影响）";
+            else
+                TextBox1.Text = strJson;
             _lastJson = strJson;
             _lastLabel = endpointLabel;
             try
@@ -1537,13 +1546,12 @@ namespace WindowsApplication3
 
         private async void btnGetMtrlDetail_Click(object sender, EventArgs e)
         {
-            // 一键智能取号：优先用表格选中行，取不到自动拉物料列表第一条
+            // 一键智能取号：右侧结果表选中行 → 左侧物料 Tab 选中行 → 自动拉物料列表第一条
             string billNo = await ResolveDetailKeyAsync(
-                new[] { "number", "bill_no", "material_number" }, FetchMaterialForTab);
+                new[] { "number", "material_number", "bill_no" }, FetchMaterialForTab, dgvAutoTabMaterial);
             if (string.IsNullOrWhiteSpace(billNo))
             {
-                MessageBox.Show("无法取得物料编码：表格无可用数据，且自动拉取的物料列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用物料编码：请先在物料列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
@@ -1591,17 +1599,24 @@ namespace WindowsApplication3
         /// 若表格没有可用数据，则自动调用对应列表接口拉一次数据，从第一条提取同名字段。
         /// 这样无需先手动查列表、也无需选中行，点详情按钮即可出结果。
         /// 返回 null 表示确实取不到号（列表也无数据）。
+        /// 取号顺序：右侧结果表选中行 → 左侧对应 Tab 表格选中行 → 后台自动拉列表第一条。
         /// </summary>
         /// <param name="candidateNames">要取的字段候选名，如 number/bill_no 或 id/material_id</param>
         /// <param name="listFetcher">对应列表接口的取数委托（在后台线程执行）</param>
-        private async Task<string> ResolveDetailKeyAsync(string[] candidateNames, Func<string> listFetcher)
+        /// <param name="extraGrid">额外的取号来源（如左侧工单/物料 Tab 表格），可为 null</param>
+        private async Task<string> ResolveDetailKeyAsync(
+            string[] candidateNames, Func<string> listFetcher, DataGridView extraGrid = null)
         {
-            // 1) 先看表格里有没有选中行/可用的号
+            // 1) 先查右侧结果表当前行/第一行
             bool hasRows;
             string key = GetSelectedValue(out hasRows, candidateNames);
             if (!string.IsNullOrWhiteSpace(key)) return key;
 
-            // 2) 表格取不到：自动拉一次列表，从第一条提取号（后台线程，不卡 UI）
+            // 2) 右表取不到：查左侧对应 Tab 表格（用户看到的往往就是这里的数据）
+            key = GetValueFromGrid(extraGrid, candidateNames);
+            if (!string.IsNullOrWhiteSpace(key)) return key;
+
+            // 3) 仍然取不到：后台自动拉一次列表，从第一条提取号（不卡 UI）
             if (listFetcher == null) return null;
             try
             {
@@ -1609,6 +1624,25 @@ namespace WindowsApplication3
                 return ExtractKeyFromFirstRow(listJson, candidateNames);
             }
             catch { return null; }
+        }
+
+        /// <summary>从任意 DataGridView 的当前行（或第一行）按候选列名取值，取不到返回 null。</summary>
+        private string GetValueFromGrid(DataGridView grid, params string[] candidateNames)
+        {
+            if (grid == null) return null;
+            string v = null;
+            if (grid.CurrentRow != null) v = FindCellValue(grid.CurrentRow, candidateNames);
+            if (string.IsNullOrWhiteSpace(v) && grid.Rows.Count > 0) v = FindCellValue(grid.Rows[0], candidateNames);
+            return string.IsNullOrWhiteSpace(v) ? null : v;
+        }
+
+        /// <summary>轻量状态提示：只改标题栏，不弹框打断操作。</summary>
+        private void SetStatusHint(string hint)
+        {
+            if (!IsDisposed && IsHandleCreated)
+            {
+                try { this.Text = "星辰API调用 - " + hint; } catch { }
+            }
         }
 
         /// <summary>
@@ -1680,13 +1714,13 @@ namespace WindowsApplication3
 
         private async void btnGetMoLst_Click(object sender, EventArgs e)
         {
-            // 一键智能取号：优先用表格选中行，取不到自动拉工单列表第一条
+            // 一键智能取号：右侧结果表选中行 → 左侧工单 Tab 选中行 → 自动拉工单列表第一条
             string billNo = await ResolveDetailKeyAsync(
-                new[] { "number", "bill_no", "material_number" }, FetchWorkOrderForTab);
+                new[] { "bill_no", "number", "billNo", "FBillNo", "bill_number", "material_number" },
+                FetchWorkOrderForTab, dgvAutoTabWorkOrder);
             if (string.IsNullOrWhiteSpace(billNo))
             {
-                MessageBox.Show("无法取得工单号：表格无可用数据，且自动拉取的生产工单列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用工单号：请先在工单列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
@@ -1734,8 +1768,7 @@ namespace WindowsApplication3
                 });
             if (string.IsNullOrWhiteSpace(id))
             {
-                MessageBox.Show("无法取得入库单 id：表格无可用数据，且自动拉取的入库列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用入库单 id：请先在入库列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
@@ -1794,8 +1827,7 @@ namespace WindowsApplication3
                 });
             if (string.IsNullOrWhiteSpace(billNo))
             {
-                MessageBox.Show("无法取得采购订单号：表格无可用数据，且自动拉取的采购订单列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用采购订单号：请先在采购订单列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
@@ -1896,8 +1928,7 @@ namespace WindowsApplication3
                 });
             if (string.IsNullOrWhiteSpace(id))
             {
-                MessageBox.Show("无法取得销售订单 id：表格无可用数据，且自动拉取的销售订单列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用销售订单 id：请先在销售订单列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
@@ -1945,8 +1976,7 @@ namespace WindowsApplication3
                 });
             if (string.IsNullOrWhiteSpace(id))
             {
-                MessageBox.Show("无法取得销售出库单 id：表格无可用数据，且自动拉取的销售出库单列表也是空的。",
-                    "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatusHint("未找到可用销售出库单 id：请先在销售出库列表选中一行，或稍后重试");
                 return;
             }
             var paramLst = new List<LrParam>();
