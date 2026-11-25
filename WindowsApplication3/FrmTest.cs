@@ -529,15 +529,46 @@ namespace WindowsApplication3
             return seg;
         }
 
-        /// <summary>对象内字段优先级：id 类=0，name 类=1，其余=2</summary>
+        /// <summary>
+        /// 对象内字段优先级：主键 → 编码 → 名称 → 数量 → 其余。
+        /// 与入库 BizKey 优先级习惯一致（id/material_id → bill_no/number/code → name）。
+        /// </summary>
         private int FieldRank(string keyPath)
         {
             string f = FieldName(keyPath);
+
+            // 0 主键：id / xxx_id / xxxId
             if (string.Equals(f, "id", StringComparison.OrdinalIgnoreCase) ||
-                f.EndsWith("_id", StringComparison.OrdinalIgnoreCase)) return 0;
+                f.EndsWith("_id", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("Id", StringComparison.Ordinal)) return 0;
+
+            // 1 编码：bill_no / number / code / xxx_number / xxx_code / xxx_no
+            if (string.Equals(f, "number", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "code", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "bill_no", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_number", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_code", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_no", StringComparison.OrdinalIgnoreCase)) return 1;
+
+            // 2 名称：name / xxx_name / xxxName
             if (string.Equals(f, "name", StringComparison.OrdinalIgnoreCase) ||
-                f.EndsWith("_name", StringComparison.OrdinalIgnoreCase)) return 1;
-            return 2;
+                f.EndsWith("_name", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("Name", StringComparison.Ordinal)) return 2;
+
+            // 3 数量：qty / quantity / num / count / amount 及其后缀
+            if (string.Equals(f, "qty", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "quantity", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "num", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "count", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f, "amount", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_qty", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_num", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_count", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_amount", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("Qty", StringComparison.Ordinal) ||
+                f.EndsWith("Num", StringComparison.Ordinal)) return 3;
+
+            return 4;
         }
 
         /// <summary>
