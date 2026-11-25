@@ -511,25 +511,33 @@ namespace WindowsApplication3
             return "";
         }
 
-        /// <summary>列名路径里是否含 name 字段（如 name / material.name / detail[0].unit.name）</summary>
-        private bool ContainsName(string keyPath)
+        /// <summary>取字段路径的"对象前缀"（最后一个 . 之前），同一对象的字段据此排在一起</summary>
+        private string ObjectPrefix(string keyPath)
         {
-            foreach (string seg in keyPath.Split('.'))
-            {
-                string name = seg;
-                int bracket = name.IndexOf('[');
-                if (bracket > 0) name = name.Substring(0, bracket);
-                if (string.Equals(name, "name", StringComparison.OrdinalIgnoreCase) ||
-                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0)
-                    return true;
-            }
-            return false;
+            int dot = keyPath.LastIndexOf('.');
+            return dot < 0 ? "" : keyPath.Substring(0, dot);
         }
 
-        /// <summary>是否为顶层的 name 列（排序时最优先）</summary>
-        private bool IsExactName(string keyPath)
+        /// <summary>取字段路径的字段名（最后一段，去掉数组下标 [n]）</summary>
+        private string FieldName(string keyPath)
         {
-            return string.Equals(keyPath, "name", StringComparison.OrdinalIgnoreCase);
+            string seg = keyPath;
+            int dot = keyPath.LastIndexOf('.');
+            if (dot >= 0) seg = keyPath.Substring(dot + 1);
+            int bracket = seg.IndexOf('[');
+            if (bracket > 0) seg = seg.Substring(0, bracket);
+            return seg;
+        }
+
+        /// <summary>对象内字段优先级：id 类=0，name 类=1，其余=2</summary>
+        private int FieldRank(string keyPath)
+        {
+            string f = FieldName(keyPath);
+            if (string.Equals(f, "id", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_id", StringComparison.OrdinalIgnoreCase)) return 0;
+            if (string.Equals(f, "name", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith("_name", StringComparison.OrdinalIgnoreCase)) return 1;
+            return 2;
         }
 
         /// <summary>
@@ -600,17 +608,24 @@ namespace WindowsApplication3
                 return dt;
             }
 
-            // 第一遍扫描：收集所有列名
-            HashSet<string> allKeys = new HashSet<string>();
+            // 第一遍扫描：按 JSON 中出现顺序收集列名（保序去重）
+            List<string> allKeys = new List<string>();
+            HashSet<string> seenKeys = new HashSet<string>();
             foreach (JObject row in objRows)
             {
-                CollectKeys(row, "", allKeys);
+                CollectKeys(row, "", allKeys, seenKeys);
             }
-            // 列顺序：所有含 name 的列排最前（顶层 name 优先，其余按含 name 的层级深度），其余字段按字母排序
+            // 先按"对象前缀"分组（同一对象的字段连续，对象顺序按首次出现），
+            // 对象内部再按 id → name → 其余字段 排列，让每个对象的完整内容挨在一起显示。
+            Dictionary<string, int> groupOrder = new Dictionary<string, int>();
+            foreach (string key in allKeys)
+            {
+                string prefix = ObjectPrefix(key);
+                if (!groupOrder.ContainsKey(prefix)) groupOrder[prefix] = groupOrder.Count;
+            }
             List<string> sortedKeys = allKeys
-                .OrderBy(k => ContainsName(k) ? 0 : 1)
-                .ThenBy(k => IsExactName(k) ? 0 : 1)
-                .ThenBy(k => k.Count(c => c == '.'))
+                .OrderBy(k => groupOrder[ObjectPrefix(k)])
+                .ThenBy(k => FieldRank(k))
                 .ThenBy(k => k, StringComparer.Ordinal)
                 .ToList();
 
@@ -661,7 +676,13 @@ namespace WindowsApplication3
         /// 递归收集所有键（嵌套对象用点号连接，数组展开为序号；
         /// 字符串化的 JSON 会先还原再展开）
         /// </summary>
-        private void CollectKeys(JObject obj, string prefix, HashSet<string> keys)
+        // 保序去重：既加入有序列表（决定列出现顺序），又用 HashSet 去重
+        private void AddKey(List<string> keys, HashSet<string> seen, string key)
+        {
+            if (seen.Add(key)) keys.Add(key);
+        }
+
+        private void CollectKeys(JObject obj, string prefix, List<string> keys, HashSet<string> seen)
         {
             foreach (var prop in obj.Properties())
             {
@@ -669,7 +690,7 @@ namespace WindowsApplication3
                 JToken value = ResolveJsonValue(prop.Value);
                 if (value is JObject)
                 {
-                    CollectKeys((JObject)value, fullKey, keys);
+                    CollectKeys((JObject)value, fullKey, keys, seen);
                 }
                 else if (value is JArray)
                 {
@@ -686,19 +707,19 @@ namespace WindowsApplication3
                         {
                             JToken item = ResolveJsonValue(arr[i]);
                             if (item is JObject)
-                                CollectKeys((JObject)item, fullKey + "[" + i + "]", keys);
+                                CollectKeys((JObject)item, fullKey + "[" + i + "]", keys, seen);
                             else
-                                keys.Add(fullKey + "[" + i + "]");
+                                AddKey(keys, seen, fullKey + "[" + i + "]");
                         }
                     }
                     else
                     {
-                        keys.Add(fullKey);
+                        AddKey(keys, seen, fullKey);
                     }
                 }
                 else
                 {
-                    keys.Add(fullKey);
+                    AddKey(keys, seen, fullKey);
                 }
             }
         }
