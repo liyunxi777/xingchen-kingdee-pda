@@ -514,6 +514,27 @@ namespace WindowsApplication3
         /// <summary>
         /// 将任意API返回的JSON（含data.rows）动态拍平为DataTable，自动识别所有字段并展开嵌套
         /// </summary>
+        /// <summary>列名路径里是否含 name 字段（如 name / material.name / detail[0].unit.name）</summary>
+        private bool ContainsName(string keyPath)
+        {
+            foreach (string seg in keyPath.Split('.'))
+            {
+                string name = seg;
+                int bracket = name.IndexOf('[');
+                if (bracket > 0) name = name.Substring(0, bracket);
+                if (string.Equals(name, "name", StringComparison.OrdinalIgnoreCase) ||
+                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>是否为顶层的 name 列（排序时最优先）</summary>
+        private bool IsExactName(string keyPath)
+        {
+            return string.Equals(keyPath, "name", StringComparison.OrdinalIgnoreCase);
+        }
+
         private DataTable FlattenGenericJson(string jsonStr)
         {
             DataTable dt = new DataTable();
@@ -585,9 +606,11 @@ namespace WindowsApplication3
             {
                 CollectKeys(row, "", allKeys);
             }
-            // 列顺序：name 排最前，其余字段仍按字母排序
+            // 列顺序：所有含 name 的列排最前（顶层 name 优先，其余按含 name 的层级深度），其余字段按字母排序
             List<string> sortedKeys = allKeys
-                .OrderBy(k => string.Equals(k, "name", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .OrderBy(k => ContainsName(k) ? 0 : 1)
+                .ThenBy(k => IsExactName(k) ? 0 : 1)
+                .ThenBy(k => k.Count(c => c == '.'), StringComparer.Ordinal)
                 .ThenBy(k => k, StringComparer.Ordinal)
                 .ToList();
 
@@ -611,31 +634,61 @@ namespace WindowsApplication3
         }
 
         /// <summary>
-        /// 递归收集所有键（嵌套对象用点号连接，数组展开为序号）
+        /// 把"字符串化的 JSON"还原成 JObject/JArray。
+        /// 金蝶部分字段（如分录明细）会把对象/数组序列化成字符串返回，
+        /// 若不还原，这些字段会被当成普通文本整段塞进一列，里面的 name 字段就无法单独成列。
+        /// 只对以 { 或 [ 开头的字符串尝试解析，普通文本（如物料名称）原样返回，行为不变。
+        /// </summary>
+        private JToken ResolveJsonValue(JToken token)
+        {
+            if (token is JValue && token.Type == JTokenType.String)
+            {
+                string s = token.ToString().Trim();
+                if (s.StartsWith("{") || s.StartsWith("["))
+                {
+                    try
+                    {
+                        JToken parsed = JToken.Parse(s);
+                        if (parsed is JObject || parsed is JArray) return parsed;
+                    }
+                    catch { }
+                }
+            }
+            return token;
+        }
+
+        /// <summary>
+        /// 递归收集所有键（嵌套对象用点号连接，数组展开为序号；
+        /// 字符串化的 JSON 会先还原再展开）
         /// </summary>
         private void CollectKeys(JObject obj, string prefix, HashSet<string> keys)
         {
             foreach (var prop in obj.Properties())
             {
                 string fullKey = string.IsNullOrEmpty(prefix) ? prop.Name : prefix + "." + prop.Name;
-                if (prop.Value is JObject)
+                JToken value = ResolveJsonValue(prop.Value);
+                if (value is JObject)
                 {
-                    CollectKeys((JObject)prop.Value, fullKey, keys);
+                    CollectKeys((JObject)value, fullKey, keys);
                 }
-                else if (prop.Value is JArray)
+                else if (value is JArray)
                 {
-                    JArray arr = (JArray)prop.Value;
-                    if (arr.Count > 0 && arr[0] is JObject)
+                    JArray arr = (JArray)value;
+                    // 数组中只要有对象元素就逐个展开（兼容元素是字符串化 JSON 的情况）
+                    bool hasObjectItem = false;
+                    foreach (JToken item in arr)
                     {
-                        // 对象数组：展开每个元素的内部字段
+                        if (ResolveJsonValue(item) is JObject) { hasObjectItem = true; break; }
+                    }
+                    if (hasObjectItem)
+                    {
                         for (int i = 0; i < arr.Count; i++)
                         {
-                            if (arr[i] is JObject)
-                            {
-                                JObject arrObj = (JObject)arr[i];
-                                string arrPrefix = fullKey + "[" + i + "]";
-                                CollectKeys(arrObj, arrPrefix, keys);
-                            }
+                            JToken item = ResolveJsonValue(arr[i]);
+                            if (item is JObject)
+                                CollectKeys((JObject)item, fullKey + "[" + i + "]", keys);
+                            else
+                                keys.Add(fullKey + "[" + i + "]");
                         }
                     }
                     else
@@ -677,11 +730,13 @@ namespace WindowsApplication3
                     JToken child;
                     if (curObj.TryGetValue(propName, out child) && child != null)
                     {
+                        // 与 CollectKeys 对应：字符串化的 JSON 先还原，才能继续按路径深入取值
+                        child = ResolveJsonValue(child);
                         if (arrIndex >= 0 && child is JArray)
                         {
                             JArray arr = (JArray)child;
                             if (arrIndex < arr.Count)
-                                current = arr[arrIndex];
+                                current = ResolveJsonValue(arr[arrIndex]);
                             else
                                 return "";
                         }
