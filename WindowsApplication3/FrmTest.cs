@@ -380,37 +380,44 @@ namespace WindowsApplication3
         /// <summary>
         /// 将API返回的JSON拍平为DataTable
         /// </summary>
+        // 列顺序即输出契约，与精简前逐字一致，勿调整
+        private static readonly string[] MaterialColumns =
+        {
+            "material_id", "material_number", "material_name", "material_full_name",
+            "specification", "model", "barcode", "material_group_id", "material_group_name",
+            "material_group_number", "measure_unit_id", "measure_unit_name", "is_multi_unit",
+            "primary_unit_name", "primary_unit_convert", "alt_units", "units_json",
+            "aux_prop_id", "aux_prop_name", "labels", "labels_json", "custom_fields",
+            "custom_field_json", "enable", "remark", "create_time", "modify_time", "row_json"
+        };
+
+        // 直映射表：目标列 -> 源字段（is_multi_unit / enable 需转换，单独处理）
+        private static readonly string[][] MaterialFieldMap =
+        {
+            new[] { "material_id", "id" },
+            new[] { "material_number", "number" },
+            new[] { "material_name", "name" },
+            new[] { "material_full_name", "full_name" },
+            new[] { "specification", "spec" },
+            new[] { "model", "model" },
+            new[] { "barcode", "barcode" },
+            new[] { "material_group_id", "material_group_id" },
+            new[] { "material_group_name", "material_group_name" },
+            new[] { "material_group_number", "material_group_number" },
+            new[] { "measure_unit_id", "measure_unit_id" },
+            new[] { "measure_unit_name", "measure_unit_name" },
+            new[] { "aux_prop_id", "aux_prop_id" },
+            new[] { "aux_prop_name", "aux_prop_name" },
+            new[] { "remark", "remark" },
+            new[] { "create_time", "create_time" },
+            new[] { "modify_time", "modify_time" }
+        };
+
         private DataTable FlattenMaterialJson(string jsonStr)
         {
             DataTable dt = new DataTable();
-            dt.Columns.Add("material_id", typeof(string));
-            dt.Columns.Add("material_number", typeof(string));
-            dt.Columns.Add("material_name", typeof(string));
-            dt.Columns.Add("material_full_name", typeof(string));
-            dt.Columns.Add("specification", typeof(string));
-            dt.Columns.Add("model", typeof(string));
-            dt.Columns.Add("barcode", typeof(string));
-            dt.Columns.Add("material_group_id", typeof(string));
-            dt.Columns.Add("material_group_name", typeof(string));
-            dt.Columns.Add("material_group_number", typeof(string));
-            dt.Columns.Add("measure_unit_id", typeof(string));
-            dt.Columns.Add("measure_unit_name", typeof(string));
-            dt.Columns.Add("is_multi_unit", typeof(string));
-            dt.Columns.Add("primary_unit_name", typeof(string));
-            dt.Columns.Add("primary_unit_convert", typeof(string));
-            dt.Columns.Add("alt_units", typeof(string));
-            dt.Columns.Add("units_json", typeof(string));
-            dt.Columns.Add("aux_prop_id", typeof(string));
-            dt.Columns.Add("aux_prop_name", typeof(string));
-            dt.Columns.Add("labels", typeof(string));
-            dt.Columns.Add("labels_json", typeof(string));
-            dt.Columns.Add("custom_fields", typeof(string));
-            dt.Columns.Add("custom_field_json", typeof(string));
-            dt.Columns.Add("enable", typeof(string));
-            dt.Columns.Add("remark", typeof(string));
-            dt.Columns.Add("create_time", typeof(string));
-            dt.Columns.Add("modify_time", typeof(string));
-            dt.Columns.Add("row_json", typeof(string));
+            foreach (string col in MaterialColumns)
+                dt.Columns.Add(col, typeof(string));
 
             JObject jo = JsonConvert.DeserializeObject<JObject>(jsonStr);
             JArray rows = (JArray)jo["data"]["rows"];
@@ -418,25 +425,10 @@ namespace WindowsApplication3
             foreach (JObject row in rows)
             {
                 DataRow dr = dt.NewRow();
-                dr["material_id"] = ValOrEmpty(row, "id");
-                dr["material_number"] = ValOrEmpty(row, "number");
-                dr["material_name"] = ValOrEmpty(row, "name");
-                dr["material_full_name"] = ValOrEmpty(row, "full_name");
-                dr["specification"] = ValOrEmpty(row, "spec");
-                dr["model"] = ValOrEmpty(row, "model");
-                dr["barcode"] = ValOrEmpty(row, "barcode");
-                dr["material_group_id"] = ValOrEmpty(row, "material_group_id");
-                dr["material_group_name"] = ValOrEmpty(row, "material_group_name");
-                dr["material_group_number"] = ValOrEmpty(row, "material_group_number");
-                dr["measure_unit_id"] = ValOrEmpty(row, "measure_unit_id");
-                dr["measure_unit_name"] = ValOrEmpty(row, "measure_unit_name");
+                foreach (string[] pair in MaterialFieldMap)
+                    dr[pair[0]] = ValOrEmpty(row, pair[1]);
                 dr["is_multi_unit"] = ValOrEmpty(row, "is_multi_unit") == "1" ? "是" : "否";
-                dr["aux_prop_id"] = ValOrEmpty(row, "aux_prop_id");
-                dr["aux_prop_name"] = ValOrEmpty(row, "aux_prop_name");
                 dr["enable"] = ValOrEmpty(row, "enable") == "1" ? "是" : "否";
-                dr["remark"] = ValOrEmpty(row, "remark");
-                dr["create_time"] = ValOrEmpty(row, "create_time");
-                dr["modify_time"] = ValOrEmpty(row, "modify_time");
 
                 // ---------- 拍平 units ----------
                 string unitsStr = ValOrEmpty(row, "units");
