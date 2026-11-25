@@ -721,8 +721,9 @@ namespace WindowsApplication3
 
         /// <summary>
         /// 把 DataTable 填充到指定 DataGridView（主表格与 TabControl 自动刷新表格共用）。
-        /// 采用 DataSource 一次性绑定 + SuspendLayout，替代逐行 Rows.Add，
-        /// 列宽只按表头估算，避免 AutoResizeColumns 对上百行逐格测量造成的严重卡顿。
+        /// 采用手动填行 + SuspendLayout：先解除任何 DataSource 绑定回到非绑定模式，
+        /// 再用一次 Rows.Add(object[]) 批量加行，避免 DataSource 绑定在部分环境下不渲染的问题。
+        /// 列宽只按表头估算，去掉 AutoResizeColumns 逐格测量造成的严重卡顿。
         /// </summary>
         private void FillGridView(DataGridView grid, DataTable dt)
         {
@@ -735,14 +736,34 @@ namespace WindowsApplication3
                 return;
             }
 
-            // 性能：暂停布局与重绘，避免逐行 Add 触发上百次重排；用 DataSource 一次性绑定替代手动填格。
+            // 关键防御：DataGridView 一旦处于 DataSource 绑定模式，Rows.Add 会抛
+            // "不能将行添加到已绑定数据的 DataGridView"，且绑定模式下本环境可能不自动渲染。
+            // 先清空绑定，回到手动填充模式。
             grid.SuspendLayout();
             try
             {
-                grid.DataSource = null;
-                grid.AutoGenerateColumns = true;
-                grid.DataSource = dt;
-                // 只按"表头文字"估算列宽（O(列数)），不再逐格测量（原来是 O(行数×列数)，100 行时明显卡顿）
+                if (grid.DataSource != null) grid.DataSource = null;
+                grid.Columns.Clear();
+                grid.Rows.Clear();
+
+                // 一次性创建列
+                foreach (DataColumn dc in dt.Columns)
+                    grid.Columns.Add(dc.ColumnName, dc.ColumnName);
+
+                // 批量加行（限制最多显示 500 行，避免超大数据卡 UI；完整数据仍在 _lastJson/数据库）
+                const int MAX_ROWS = 500;
+                int rowCount = Math.Min(dt.Rows.Count, MAX_ROWS);
+                int colCount = dt.Columns.Count;
+                object[] values = new object[colCount];
+                for (int r = 0; r < rowCount; r++)
+                {
+                    DataRow dr = dt.Rows[r];
+                    for (int c = 0; c < colCount; c++)
+                        values[c] = dr[c];
+                    grid.Rows.Add(values);
+                }
+
+                // 列宽只按"表头文字"估算（O(列数)），不再逐格测量（AutoResizeColumns 是主要卡顿源）
                 foreach (DataGridViewColumn col in grid.Columns)
                 {
                     int w = (col.HeaderText ?? "").Length * 12 + 24;
