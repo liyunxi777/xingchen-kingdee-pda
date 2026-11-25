@@ -511,9 +511,6 @@ namespace WindowsApplication3
             return "";
         }
 
-        /// <summary>
-        /// 将任意API返回的JSON（含data.rows）动态拍平为DataTable，自动识别所有字段并展开嵌套
-        /// </summary>
         /// <summary>列名路径里是否含 name 字段（如 name / material.name / detail[0].unit.name）</summary>
         private bool ContainsName(string keyPath)
         {
@@ -535,6 +532,9 @@ namespace WindowsApplication3
             return string.Equals(keyPath, "name", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// 将任意API返回的JSON（含data.rows）动态拍平为DataTable，自动识别所有字段并展开嵌套
+        /// </summary>
         private DataTable FlattenGenericJson(string jsonStr)
         {
             DataTable dt = new DataTable();
@@ -610,7 +610,7 @@ namespace WindowsApplication3
             List<string> sortedKeys = allKeys
                 .OrderBy(k => ContainsName(k) ? 0 : 1)
                 .ThenBy(k => IsExactName(k) ? 0 : 1)
-                .ThenBy(k => k.Count(c => c == '.'), StringComparer.Ordinal)
+                .ThenBy(k => k.Count(c => c == '.'))
                 .ThenBy(k => k, StringComparer.Ordinal)
                 .ToList();
 
