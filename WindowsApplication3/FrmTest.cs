@@ -593,7 +593,11 @@ namespace WindowsApplication3
             {
                 CollectKeys(row, "", allKeys);
             }
-            List<string> sortedKeys = allKeys.OrderBy(k => k).ToList();
+            // 列顺序：name 排最前，其余字段仍按字母排序
+            List<string> sortedKeys = allKeys
+                .OrderBy(k => string.Equals(k, "name", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(k => k, StringComparer.Ordinal)
+                .ToList();
 
             // 创建列
             foreach (string key in sortedKeys)

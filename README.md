@@ -72,7 +72,7 @@ private string outerInstanceId = "...";
 **安全提示**：`clientSecret` 属于敏感信息。当前仓库为公开仓库，而源码中仍存在硬编码凭证，
 请尽快把凭证改为从 `App.config`、环境变量或服务端下发读取，并在金蝶后台轮换该 `clientSecret`。
 
-3. 数据库表结构见 `schema.sql`。程序启动时会确保 `api_request_log` 表存在，兼容老库。
+3. 数据库表由程序启动时自动创建（`EnsureCreated` + `EnsureRequestLogTable`），首次运行连接数据库后会自动建表，无需手动执行建表脚本。核心表为 `api_record` / `api_record_field` / `api_record_change` / `api_sync_log` / `api_request_log`。
 
 ## 构建
 
