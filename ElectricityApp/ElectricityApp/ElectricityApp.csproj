@@ -81,29 +81,33 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="frmGenerateQRcode.cs">
+    <Compile Include="Views\Desktop\frmGenerateQRcode.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmGenerateQRcode.Designer.cs">
+    <Compile Include="Views\Desktop\frmGenerateQRcode.Designer.cs">
       <DependentUpon>frmGenerateQRcode.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmHelp.cs">
+    <Compile Include="Views\Desktop\frmHelp.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmHelp.Designer.cs">
+    <Compile Include="Views\Desktop\frmHelp.Designer.cs">
       <DependentUpon>frmHelp.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmMain.cs">
+    <Compile Include="Views\Desktop\frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmMain.Designer.cs">
+    <Compile Include="Views\Desktop\frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="KdApiService.cs" />
-    <Compile Include="frmSetting.cs">
+    <Compile Include="Services\KdApiService.cs" />
+    <Compile Include="Services\KdApiService.Token.cs" />
+    <Compile Include="Services\KdApiService.Query.cs" />
+    <Compile Include="Services\KdApiService.Parse.cs" />
+    <Compile Include="Services\KdApiService.Diagnose.cs" />
+    <Compile Include="Views\Desktop\frmSetting.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmSetting.Designer.cs">
+    <Compile Include="Views\Desktop\frmSetting.Designer.cs">
       <DependentUpon>frmSetting.cs</DependentUpon>
     </Compile>
     <Compile Include="MobileGlobal.cs" />
@@ -120,32 +124,41 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
-    <Compile Include="SmobilerForm1.cs">
+    <Compile Include="Views\Mobile\SmobilerForm1.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="SmobilerForm1.Designer.cs">
+    <Compile Include="Views\Mobile\SmobilerForm1.Designer.cs">
       <DependentUpon>SmobilerForm1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mobile\WorkOrderForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Views\Mobile\WorkOrderForm.Designer.cs">
+      <DependentUpon>WorkOrderForm.cs</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="frmGenerateQRcode.resx">
+    <EmbeddedResource Include="Views\Desktop\frmGenerateQRcode.resx">
       <DependentUpon>frmGenerateQRcode.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frmHelp.resx">
+    <EmbeddedResource Include="Views\Desktop\frmHelp.resx">
       <DependentUpon>frmHelp.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frmMain.resx">
+    <EmbeddedResource Include="Views\Desktop\frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frmSetting.resx">
+    <EmbeddedResource Include="Views\Desktop\frmSetting.resx">
       <DependentUpon>frmSetting.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="SmobilerForm1.resx">
+    <EmbeddedResource Include="Views\Mobile\SmobilerForm1.resx">
       <DependentUpon>SmobilerForm1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\Mobile\WorkOrderForm.resx">
+      <DependentUpon>WorkOrderForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

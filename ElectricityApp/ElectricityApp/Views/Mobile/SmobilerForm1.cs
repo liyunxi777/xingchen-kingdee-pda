@@ -23,6 +23,12 @@ namespace ElectricityApp
             MessageBox.Show("hello world");
         }
 
+        /// <summary>入口：跳转到生产任务单界面（空壳）。</summary>
+        private void btnWorkOrder_Press(object sender, EventArgs e)
+        {
+            this.Show(new WorkOrderForm(), null, null);
+        }
+
         /// <summary>手输编码查询：TextBox 输入 → 查金蝶 → Label 显示。</summary>
         private void btnQuery_Press(object sender, EventArgs e)
         {
@@ -68,9 +74,23 @@ namespace ElectricityApp
             try
             {
                 string json = _kd.QueryByCode(code);
+
+                // 判断依据是"数据是否有效"（接口业务状态/错误码），不是"返回字符串是不是 JSON / 是否为空"。
+                // 接口层失败（token/网络/业务错误码）与"查无此码"是两件事，分开处理。
+                if (!_kd.LastSucceeded)
+                {
+                    string why = string.IsNullOrEmpty(_kd.LastErrorMessage)
+                        ? _kd.LastDiagnostic
+                        : "[" + _kd.LastErrorCode + "]" + _kd.LastErrorMessage;
+                    lblResult.Text = "查询失败：" + why;
+                    ClearCells();
+                    return;
+                }
+
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    lblResult.Text = "查询失败：接口无返回（检查 token 或网络）";
+                    // 接口成功但无匹配码值：诊断里列出当前账套可用编码
+                    lblResult.Text = _kd.LastDiagnostic;
                     ClearCells();
                     return;
                 }
@@ -78,7 +98,9 @@ namespace ElectricityApp
                 System.Data.DataTable dt = _kd.BuildResultTable(json);
                 if (dt.Rows.Count == 0)
                 {
-                    lblResult.Text = "未查到数据";
+                    lblResult.Text = string.IsNullOrEmpty(_kd.LastDiagnostic)
+                        ? "未查到数据（返回内容解析不出数据行）"
+                        : _kd.LastDiagnostic;
                     ClearCells();
                     return;
                 }
@@ -90,6 +112,8 @@ namespace ElectricityApp
                 lblSpecVal.Text = row["spec"] == null ? "" : row["spec"].ToString();
                 lblUnitVal.Text = row["measure_unit_name"] == null ? "" : row["measure_unit_name"].ToString();
                 lblQtyVal.Text = row["qty"] == null ? "" : row["qty"].ToString();
+
+                // 只显示简洁状态，不把金蝶原始字段诊断铺在表格上方
                 lblResult.Text = dt.Rows.Count > 1
                     ? "共 " + dt.Rows.Count + " 条，显示第 1 条"
                     : "查询成功";

@@ -20,6 +20,7 @@ namespace ElectricityApp
         private void InitializeComponent()
         {
             this.button1 = new Smobiler.Core.Controls.Button();
+            this.btnWorkOrder = new Smobiler.Core.Controls.Button();
             this.txtCode = new Smobiler.Core.Controls.TextBox();
             this.btnQuery = new Smobiler.Core.Controls.Button();
             this.btnScan = new Smobiler.Core.Controls.Button();
@@ -46,8 +47,16 @@ namespace ElectricityApp
             this.button1.Location = new System.Drawing.Point(10, 446);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(100, 35);
-            this.button1.Text = "button1";
+            this.button1.Text = "v1125新版";
             this.button1.Press += new System.EventHandler(this.button1_Press);
+            // 
+            // btnWorkOrder
+            // 
+            this.btnWorkOrder.Location = new System.Drawing.Point(10, 490);
+            this.btnWorkOrder.Name = "btnWorkOrder";
+            this.btnWorkOrder.Size = new System.Drawing.Size(300, 36);
+            this.btnWorkOrder.Text = "工单录入（空壳）";
+            this.btnWorkOrder.Press += new System.EventHandler(this.btnWorkOrder_Press);
             // 
             // txtCode
             // 
@@ -76,7 +85,7 @@ namespace ElectricityApp
             this.lblResult.Location = new System.Drawing.Point(10, 156);
             this.lblResult.Name = "lblResult";
             this.lblResult.Size = new System.Drawing.Size(300, 28);
-            this.lblResult.Text = "结果将在这里显示";
+            this.lblResult.Text = "新版已加载，请输入或扫码查询";
             // 
             // barcodeReader1
             // 
@@ -226,13 +235,15 @@ namespace ElectricityApp
             this.pnlSpec,
             this.pnlUnit,
             this.pnlQty,
-            this.button1});
+            this.button1,
+            this.btnWorkOrder});
             this.Name = "SmobilerForm1";
 
         }
         #endregion
 
         private Smobiler.Core.Controls.Button button1;
+        private Smobiler.Core.Controls.Button btnWorkOrder;
         private Smobiler.Core.Controls.TextBox txtCode;
         private Smobiler.Core.Controls.Button btnQuery;
         private Smobiler.Core.Controls.Button btnScan;
