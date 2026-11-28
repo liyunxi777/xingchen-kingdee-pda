@@ -11,6 +11,8 @@
 - 金蝶 app-token 约 24 小时有效，程序在满 20 小时时自动续期。
 - 通用入库模型：`api_record` / `api_record_field` / `api_record_change` / `api_sync_log`。
 - 请求审计表 `api_request_log`：记录设备编号、请求时间、按钮/接口、请求参数、返回条数与状态。
+- 生产任务单专用表 `work_order_detail`：点「工单详情」下载后自动把工单信息结构化入库（表头字段 + 原始 JSON），不受「自动保存」勾选影响；以工单号唯一，重复拉取只累加次数，内容变化才更新。
+- 生产工单列表（工单页签 / 「生产工单」按钮）只取**当天**数据（`start_bill_date`/`end_bill_date` = 今天）。
 - 详情类按钮自动从列表选中行（或第一条数据）智能取内码，不再写死单号。
 
 ## 项目结构
@@ -72,7 +74,7 @@ private string outerInstanceId = "...";
 **安全提示**：`clientSecret` 属于敏感信息。当前仓库为公开仓库，而源码中仍存在硬编码凭证，
 请尽快把凭证改为从 `App.config`、环境变量或服务端下发读取，并在金蝶后台轮换该 `clientSecret`。
 
-3. 数据库表由程序启动时自动创建（`EnsureCreated` + `EnsureRequestLogTable`），首次运行连接数据库后会自动建表，无需手动执行建表脚本。核心表为 `api_record` / `api_record_field` / `api_record_change` / `api_sync_log` / `api_request_log`。
+3. 数据库表由程序启动时自动创建（`EnsureCreated` + `EnsureRequestLogTable` + `EnsureWorkOrderDetailTable`），首次运行连接数据库后会自动建表，无需手动执行建表脚本；老库也会幂等补建新增表。核心表为 `api_record` / `api_record_field` / `api_record_change` / `api_sync_log` / `api_request_log` / `work_order_detail`（生产任务单）。
 
 ## 构建
 

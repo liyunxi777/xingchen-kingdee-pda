@@ -17,6 +17,7 @@ namespace WindowsApplication3.Data
         public virtual DbSet<ApiRecordChange> ApiRecordChanges { get; set; }
         public virtual DbSet<ApiSyncLog> ApiSyncLogs { get; set; }
         public virtual DbSet<ApiRequestLog> ApiRequestLogs { get; set; }
+        public virtual DbSet<WorkOrderDetail> WorkOrderDetails { get; set; }
 
         public static string GetConnectionString()
         {
@@ -125,6 +126,30 @@ namespace WindowsApplication3.Data
                 entity.HasIndex(e => e.RequestTime).HasName("ix_api_request_log_time");
                 entity.HasIndex(e => e.DeviceId).HasName("ix_api_request_log_device");
             });
+
+            modelBuilder.Entity<WorkOrderDetail>(entity =>
+            {
+                entity.ToTable("work_order_detail");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.BillNo).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.InnerId).HasMaxLength(100);
+                entity.Property(e => e.BillDate).HasMaxLength(50);
+                entity.Property(e => e.BillStatus).HasMaxLength(50);
+                entity.Property(e => e.DeptName).HasMaxLength(200);
+                entity.Property(e => e.CreatorName).HasMaxLength(200);
+                entity.Property(e => e.AuditorName).HasMaxLength(200);
+                entity.Property(e => e.TransTypeName).HasMaxLength(200);
+                entity.Property(e => e.Remark).HasMaxLength(1000);
+                entity.Property(e => e.DataHash).HasMaxLength(64);
+                entity.Property(e => e.RawJson).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.FirstSyncTime).IsRequired();
+                entity.Property(e => e.LastSyncTime).IsRequired();
+                // 同一工单号只保存一条，重复拉取只更新
+                entity.HasIndex(e => e.BillNo)
+                      .IsUnique()
+                      .HasName("ux_work_order_detail_billno");
+                entity.HasIndex(e => e.BillDate).HasName("ix_work_order_detail_billdate");
+            });
         }
 
         /// <summary>
@@ -140,6 +165,8 @@ namespace WindowsApplication3.Data
                     // EnsureCreated 对"已存在的库"不会补建新增表，这里幂等补建 api_request_log，
                     // 这样老库无需删除重建就能记录请求日志。失败不影响主库状态。
                     EnsureRequestLogTable(db);
+                    // 同理补建工单详情表（老库无需删库重建）
+                    EnsureWorkOrderDetailTable(db);
                     ok = true;
                     return created
                         ? "数据库已自动创建：" + DatabaseLabel()
@@ -184,6 +211,46 @@ END
             catch
             {
                 // 建表失败不影响主库；请求日志写入时也会再次静默失败，不会崩溃
+            }
+        }
+
+        /// <summary>
+        /// 幂等补建工单详情表：老库通过 EnsureCreated 不会自动建新表，
+        /// 这里用 OBJECT_ID 判断保证不报错、不丢数据。异常吞掉，绝不影响主库连接判定。
+        /// </summary>
+        internal static void EnsureWorkOrderDetailTable(XcApiDbContext db)
+        {
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+IF OBJECT_ID(N'dbo.work_order_detail', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[work_order_detail](
+        [Id] INT IDENTITY(1,1) NOT NULL CONSTRAINT [PK_work_order_detail] PRIMARY KEY CLUSTERED,
+        [BillNo] NVARCHAR(200) NOT NULL,
+        [InnerId] NVARCHAR(100) NULL,
+        [BillDate] NVARCHAR(50) NULL,
+        [BillStatus] NVARCHAR(50) NULL,
+        [DeptName] NVARCHAR(200) NULL,
+        [CreatorName] NVARCHAR(200) NULL,
+        [AuditorName] NVARCHAR(200) NULL,
+        [TransTypeName] NVARCHAR(200) NULL,
+        [Remark] NVARCHAR(1000) NULL,
+        [DataHash] NVARCHAR(64) NULL,
+        [RawJson] NVARCHAR(MAX) NULL,
+        [FirstSyncTime] DATETIME2 NOT NULL,
+        [LastSyncTime] DATETIME2 NOT NULL,
+        [SyncCount] INT NOT NULL DEFAULT(0),
+        [ChangeCount] INT NOT NULL DEFAULT(0)
+    );
+    CREATE UNIQUE INDEX [ux_work_order_detail_billno] ON [dbo].[work_order_detail]([BillNo]);
+    CREATE INDEX [ix_work_order_detail_billdate] ON [dbo].[work_order_detail]([BillDate]);
+END
+");
+            }
+            catch
+            {
+                // 建表失败不影响主库；写入时也会再次静默失败，不会崩溃
             }
         }
 

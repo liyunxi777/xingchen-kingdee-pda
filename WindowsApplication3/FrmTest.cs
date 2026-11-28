@@ -368,13 +368,26 @@ namespace WindowsApplication3
             return new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken, paramLst, "jdy/v2/bd/material");
         }
 
-        /// <summary>工单页签取数：拉最新工单列表（page/page_size），不依赖写死单号。</summary>
+        /// <summary>工单页签取数：只拉当天生产工单（start_bill_date/end_bill_date = 今天）。</summary>
         private string FetchWorkOrderForTab()
         {
+            return new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken,
+                BuildTodayWorkOrderParams(), "jdy/v2/pm/mo_taskbill");
+        }
+
+        /// <summary>
+        /// 生产工单列表的当天查询参数：分页 + 起止单据日期都取今天。
+        /// 工单页签自动刷新与「生产工单」按钮共用，保证两处口径一致。
+        /// </summary>
+        private static List<LrParam> BuildTodayWorkOrderParams()
+        {
+            string today = DateTime.Today.ToString("yyyy-MM-dd");
             var paramLst = new List<LrParam>();
-            var p1 = new LrParam(); p1.pKey = "page"; p1.pValue = "1"; paramLst.Add(p1);
-            var p2 = new LrParam(); p2.pKey = "page_size"; p2.pValue = "100"; paramLst.Add(p2);
-            return new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken, paramLst, "jdy/v2/pm/mo_taskbill");
+            paramLst.Add(new LrParam { pKey = "page", pValue = "1" });
+            paramLst.Add(new LrParam { pKey = "page_size", pValue = "100" });
+            paramLst.Add(new LrParam { pKey = "start_bill_date", pValue = today });
+            paramLst.Add(new LrParam { pKey = "end_bill_date", pValue = today });
+            return paramLst;
         }
 
         /// <summary>
@@ -1688,11 +1701,9 @@ namespace WindowsApplication3
 
         private async void btnIcMoBill_Click(object sender, EventArgs e)
         {
-            var paramLst = new List<LrParam>();
-            var p1 = new LrParam(); p1.pKey = "page"; p1.pValue = "1"; paramLst.Add(p1);
-            var p2 = new LrParam(); p2.pKey = "page_size"; p2.pValue = "100"; paramLst.Add(p2);
             await FetchWithThrottleAsync("mo_taskbill", "生产工单",
-                () => new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken, paramLst, "jdy/v2/pm/mo_taskbill"));
+                () => new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken,
+                    BuildTodayWorkOrderParams(), "jdy/v2/pm/mo_taskbill"));
         }
 
         /// <summary>
@@ -1852,7 +1863,48 @@ namespace WindowsApplication3
             param.pKey = "number"; param.pValue = billNo;   // 单号来自选中行，不再写死
             paramLst.Add(param);
             await FetchWithThrottleAsync("mo_taskbill_detail", "工单详情",
-                () => new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken, paramLst, "jdy/v2/pm/mo_taskbill_detail"));
+                () => new LrGetMtrlDatum().GetDatumX(clientId, clientSecret, strAppToken, paramLst, "jdy/v2/pm/mo_taskbill_detail"),
+                // 拿到详情后直接存入 work_order_detail 专用表；与通用动态入库并存，互不干扰
+                json => SaveWorkOrderDetail(json, billNo));
+        }
+
+        /// <summary>
+        /// 工单详情下载后存入 work_order_detail 表。
+        /// 独立于「自动保存」勾选：只要查到详情就保存，保证详情页数据落库。
+        /// 存库失败只提示、不影响取数主流程。
+        /// </summary>
+        private void SaveWorkOrderDetail(string json, string billNo)
+        {
+            if (!_dbReady || string.IsNullOrWhiteSpace(json)) return;
+            try
+            {
+                WorkOrderStore store = new WorkOrderStore();
+                WorkOrderSaveResult r = store.Save(json, billNo);
+                if (lblDbStatus != null)
+                {
+                    if (r.Success)
+                    {
+                        lblDbStatus.Text = "工单详情已保存\n" + r.Summary + "\n工单号：" + billNo;
+                        lblDbStatus.ForeColor = Color.DarkGreen;
+                    }
+                    else
+                    {
+                        lblDbStatus.Text = "工单详情未保存：" + r.Message;
+                        lblDbStatus.ForeColor = Color.DarkGreen;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 存库失败不影响取数主流程，但明确暴露原因
+                if (lblDbStatus != null)
+                {
+                    string detail = ex.Message.Length > 90 ? ex.Message.Substring(0, 90) : ex.Message;
+                    lblDbStatus.Text = "工单详情保存失败：" + detail;
+                    lblDbStatus.ForeColor = Color.Red;
+                }
+                Trace.WriteLine("工单详情保存失败：" + ex);
+            }
         }
 
         private async void btnGetInStkLst_Click(object sender, EventArgs e)

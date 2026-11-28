@@ -69,6 +69,8 @@
     <Compile Include="Data\JsonFlattener.cs" />
     <Compile Include="Data\DynamicJsonStore.cs" />
     <Compile Include="Data\EndpointMap.cs" />
+    <Compile Include="Data\WorkOrderDetail.cs" />
+    <Compile Include="Data\WorkOrderStore.cs" />
     <Compile Include="FrmTest.cs">
       <SubType>Form</SubType>
     </Compile>
