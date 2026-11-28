@@ -1,35 +1,30 @@
-﻿using Smobiler.Core;
+using Smobiler.Core;
 using Smobiler.Core.Controls;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ElectricityApp
 {
-    partial class SmobilerForm1 : Smobiler.Core.Controls.MobileForm
+    /// <summary>
+    /// 扫码查料界面：扫码/手输物料编码 → 查金蝶（jdy/v2/bd/material，取数方式同 FrmTest.cs）→ 填入格子表单。
+    /// 查询服务复用 KdApiService（token、匹配容错、诊断、状态判断都在其中）。
+    /// </summary>
+    partial class ScanForm : Smobiler.Core.Controls.MobileForm
     {
         // 金蝶查询服务：复用 LrGetToken 取数，凭证从 app.config 读取
         private readonly KdApiService _kd = new KdApiService();
 
-        public SmobilerForm1() : base()
+        public ScanForm() : base()
         {
             InitializeComponent();
         }
 
-        // 保留原 hello world 测试按钮
-        private void button1_Press(object sender, EventArgs e)
+        /// <summary>返回主页。</summary>
+        private void btnBack_Press(object sender, EventArgs e)
         {
-            MessageBox.Show("hello world");
+            this.Close();
         }
 
-        /// <summary>入口：跳转到生产任务单界面（空壳）。</summary>
-        private void btnWorkOrder_Press(object sender, EventArgs e)
-        {
-            this.Show(new WorkOrderForm(), null, null);
-        }
-
-        /// <summary>手输编码查询：TextBox 输入 → 查金蝶 → Label 显示。</summary>
+        /// <summary>手输编码查询：TextBox 输入 → 查金蝶 → 格子显示。</summary>
         private void btnQuery_Press(object sender, EventArgs e)
         {
             QueryAndShow(txtCode.Text);
@@ -73,10 +68,10 @@ namespace ElectricityApp
             lblResult.Text = "查询中，请稍候...";
             try
             {
+                // 取数方式与 FrmTest.cs 一致：jdy/v2/bd/material + page/page_size/show_units + 本地匹配
                 string json = _kd.QueryByCode(code);
 
-                // 判断依据是"数据是否有效"（接口业务状态/错误码），不是"返回字符串是不是 JSON / 是否为空"。
-                // 接口层失败（token/网络/业务错误码）与"查无此码"是两件事，分开处理。
+                // 判断依据是业务状态（接口错误码/rows），不是返回字符串是否为空
                 if (!_kd.LastSucceeded)
                 {
                     string why = string.IsNullOrEmpty(_kd.LastErrorMessage)
@@ -113,7 +108,6 @@ namespace ElectricityApp
                 lblUnitVal.Text = row["measure_unit_name"] == null ? "" : row["measure_unit_name"].ToString();
                 lblQtyVal.Text = row["qty"] == null ? "" : row["qty"].ToString();
 
-                // 只显示简洁状态，不把金蝶原始字段诊断铺在表格上方
                 lblResult.Text = dt.Rows.Count > 1
                     ? "共 " + dt.Rows.Count + " 条，显示第 1 条"
                     : "查询成功";

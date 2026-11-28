@@ -42,7 +42,8 @@ namespace ElectricityApp
             this.lblRemarkHead = new Smobiler.Core.Controls.Label();
             this.txtRemark = new Smobiler.Core.Controls.TextBox();
             this.btnSave = new Smobiler.Core.Controls.Button();
-            this.btnBack = new Smobiler.Core.Controls.Button();
+            this.btnScan = new Smobiler.Core.Controls.Button();
+            this.barcodeReader1 = new Smobiler.Plugins.BarcodeReader();
             // 
             // lblTitle
             // 
@@ -266,16 +267,25 @@ namespace ElectricityApp
             this.btnSave.Text = "保存补录（暂不上传）";
             this.btnSave.Press += new System.EventHandler(this.btnSave_Press);
             // 
-            // btnBack
+            // btnScan
             // 
-            this.btnBack.Location = new System.Drawing.Point(209, 456);
-            this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(91, 38);
-            this.btnBack.Text = "返回";
-            this.btnBack.Press += new System.EventHandler(this.btnBack_Press);
+            this.btnScan.BackColor = System.Drawing.Color.White;
+            this.btnScan.Border = new Smobiler.Core.Controls.Border(1F);
+            this.btnScan.BorderColor = System.Drawing.Color.Gray;
+            this.btnScan.Location = new System.Drawing.Point(209, 456);
+            this.btnScan.Name = "btnScan";
+            this.btnScan.Size = new System.Drawing.Size(91, 38);
+            this.btnScan.Text = "扫码";
+            this.btnScan.Press += new System.EventHandler(this.btnScan_Press);
+            // 
+            // barcodeReader1
+            // 
+            this.barcodeReader1.Name = "barcodeReader1";
             // 
             // WorkOrderForm
             // 
+            this.Components.AddRange(new Smobiler.Core.Controls.MobileComponent[] {
+            this.barcodeReader1});
             this.Controls.AddRange(new Smobiler.Core.Controls.MobileControl[] {
             this.lblTitle,
             this.lblBillNoHead,
@@ -305,7 +315,7 @@ namespace ElectricityApp
             this.lblRemarkHead,
             this.txtRemark,
             this.btnSave,
-            this.btnBack});
+            this.btnScan});
             this.Name = "WorkOrderForm";
 
         }
@@ -339,6 +349,7 @@ namespace ElectricityApp
         private Smobiler.Core.Controls.Label lblRemarkHead;
         private Smobiler.Core.Controls.TextBox txtRemark;
         private Smobiler.Core.Controls.Button btnSave;
-        private Smobiler.Core.Controls.Button btnBack;
+        private Smobiler.Core.Controls.Button btnScan;
+        private Smobiler.Plugins.BarcodeReader barcodeReader1;
     }
 }

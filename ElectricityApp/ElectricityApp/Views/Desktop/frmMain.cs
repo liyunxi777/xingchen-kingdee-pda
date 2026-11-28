@@ -104,8 +104,8 @@ partial class frmMain
     {
         try
         {
-            //服务起始界面
-            server.StartUpForm = typeof(ElectricityApp.SmobilerForm1);
+            //服务起始界面：主页导航（app 图标入口）
+            server.StartUpForm = typeof(ElectricityApp.HomeForm);
             //服务TCP端口，默认为2323   
             this.txtTcpPort.Text = server.Setting.TcpServerPort.ToString();
             //服务HTTP端口，默认为2324  

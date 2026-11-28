@@ -124,11 +124,17 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
-    <Compile Include="Views\Mobile\SmobilerForm1.cs">
+    <Compile Include="Views\Mobile\HomeForm.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Views\Mobile\SmobilerForm1.Designer.cs">
-      <DependentUpon>SmobilerForm1.cs</DependentUpon>
+    <Compile Include="Views\Mobile\HomeForm.Designer.cs">
+      <DependentUpon>HomeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mobile\ScanForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Views\Mobile\ScanForm.Designer.cs">
+      <DependentUpon>ScanForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\Mobile\WorkOrderForm.cs">
       <SubType>Component</SubType>
@@ -154,8 +160,11 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Views\Mobile\SmobilerForm1.resx">
-      <DependentUpon>SmobilerForm1.cs</DependentUpon>
+    <EmbeddedResource Include="Views\Mobile\HomeForm.resx">
+      <DependentUpon>HomeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\Mobile\ScanForm.resx">
+      <DependentUpon>ScanForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\Mobile\WorkOrderForm.resx">
       <DependentUpon>WorkOrderForm.cs</DependentUpon>
